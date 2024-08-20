@@ -6,9 +6,12 @@ TBD
 ## Example
 
 ```go
-c := NewClient()
-c.BaseURL = "https://.../.../api"
-c.APIToken = "..."
+const (
+  apiURL   = "https://.../.../api"
+  apiToken = "..."
+)
+c := NewClient(apiURL)
+c.APIToken = apiToken
 
 resp := must(c.StartWorkflow(ctx, NewStartWorkflowRequest(prompt)))
 id := resp.ID
