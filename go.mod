@@ -1,3 +1,3 @@
-module github.com/ai-dock-comfyui-go
+module github.com/yarcat/ai-dock-comfyui-go
 
 go 1.22.6
