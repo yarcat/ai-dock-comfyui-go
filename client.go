@@ -15,14 +15,29 @@ type HandlerType string
 const (
 	// HandlerRawWorkflow is a ComfyUI API handler type for raw workflow.
 	HandlerRawWorkflow HandlerType = "RawWorkflow"
+	// TODO: Add more types.
 )
+
+// Webhook contains information about the webhook to be invoked after the generation.
+type Webhook struct {
+	// URL is a ComfyUI generation API webhook URL.
+	URL    string         `json:"url"`
+	Params map[string]any `json:"extra_params,omitempty"`
+}
 
 // Input is a ComfyUI generation API input.
 type Input struct {
+	// RequestID is a ComfyUI generation API request ID. If omitted, a new uuid is generated.
+	// Note that the request ID is used to output the results. For example, if the request ID is
+	// "1234", the results might be available at your bucket + "/1234/{filename}" (where filename
+	// is the generated file e.g. "ComfyUI_01234_.jpg").
+	RequestID string          `json:"request_id,omitempty"`
 	Handler   HandlerType     `json:"handler"`
 	GCP       *struct{}       `json:"gcp,omitempty"`
 	Modifiers *struct{}       `json:"modifiers,omitempty"`
 	Workflow  json.RawMessage `json:"workflow_json"`
+	// Webhook contains information about the webhook to be invoked after the generation.
+	Webhook *Webhook `json:"webhook,omitempty"`
 }
 
 // StatusType is a ComfyUI generation status e.g. pending.
@@ -114,9 +129,17 @@ type StartWorkflowRequest struct {
 	Input Input `json:"input"`
 }
 
+// NewStartWorkflowOptionsFunc is a function that sets options for NewStartWorkflowRequest.
+type NewStartWorkflowOptionsFunc func(*StartWorkflowRequest)
+
+// StartWithRequestID sets the request ID for NewStartWorkflowRequest.
+func StartWithRequestID(requestID string) NewStartWorkflowOptionsFunc {
+	return func(r *StartWorkflowRequest) { r.Input.RequestID = requestID }
+}
+
 // NewStartWorkflowRequest returns a new ComfyUI API start request.
-func NewStartWorkflowRequest(workflow []byte) *StartWorkflowRequest {
-	return &StartWorkflowRequest{
+func NewStartWorkflowRequest(workflow []byte, opts ...NewStartWorkflowOptionsFunc) *StartWorkflowRequest {
+	req := &StartWorkflowRequest{
 		Input: Input{
 			Handler:   HandlerRawWorkflow,
 			Workflow:  workflow,
@@ -124,6 +147,10 @@ func NewStartWorkflowRequest(workflow []byte) *StartWorkflowRequest {
 			Modifiers: new(struct{}),
 		},
 	}
+	for _, f := range opts {
+		f(req)
+	}
+	return req
 }
 
 // StartWorkflow starts a ComfyUI API workflow.
